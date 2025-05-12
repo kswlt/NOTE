@@ -284,6 +284,66 @@ vncserver :1 -geometry 1920x1080
 3. **远程连接模糊**  
    - 调整VNC客户端色彩设置为True Color
    - 增加视频内存分配值（VideoRam）
-``` 
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+原因分析​​
+​​分支名称不匹配​​
+你尝试推送main和master分支均失败，因为：
+​​本地分支是master​​：通过git commit日志显示本地分支为master。
+​​远程仓库可能无对应分支​​：若远程仓库是新建的且未初始化，默认可能没有main或master分支（需手动创建）。
+​​子仓库嵌套导致警告​​
+添加的目录ros_ws/包含其他Git仓库，导致Git误判为子模块。直接添加会引发警告，但不会阻止提交，可能影响后续操作。
+​​远程仓库已存在但分支未初始化​​
+首次推送时，若远程仓库为空且未创建默认分支（如main或master），直接推送会因“源引用规格不匹配”失败。
+​​解决方案​​
+步骤1：检查并确认本地分支
+git branch  # 查看本地分支名称（应为master）
+步骤2：重命名本地分支（可选）
+若需与远程分支main匹配（如GitHub默认分支），重命名本地分支：
+
+git branch -m master main  # 将本地分支master改为main
+步骤3：处理子仓库嵌套问题
+若ros_ws/是独立仓库，需移除缓存中的嵌套仓库路径：
+
+git rm --cached ros_ws/src/pb2025_sentry_nav/my_nav_controller  # 移除误添加的子仓库路径
+git add .  # 重新添加其他文件（不含子仓库）
+git commit -m "fix: remove nested repositories"
+步骤4：强制推送到远程并创建分支
+若远程仓库为空，强制推送以初始化远程分支：
+
+git push -u origin master --force  # 若本地分支为master
+# 或
+git push -u origin main --force     # 若已重命名为main
+​​补充说明​​
+​​分支名称规范​​
+GitHub等平台默认分支已从master改为main，建议本地同步此设置。
+可通过全局配置统一默认分支名称：
+git config --global init.defaultBranch main  # 设置默认分支为main
+​​子模块的正确用法​​
+若需保留嵌套仓库，应使用git submodule add命令添加为子模块：
+git submodule add <仓库URL> ros_ws/src/pb2025_sentry_nav/my_nav_controller
+​​操作验证​​
+​​查看远程分支​​：
+git ls-remote --heads origin  # 确认远程分支是否创建成功
+​​重新拉取代码​​：
+git pull origin main  # 测试分支同步
+通过以上步骤，分支名称冲突和远程仓库初始化问题均可解决。若仍遇到错误，可检查网络权限或SSH密钥配置
 
 （注：此模板根据常见配置方案整理，具体参数需根据实际硬件环境调整）
